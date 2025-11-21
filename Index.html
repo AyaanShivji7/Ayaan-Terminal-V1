@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ayaan Terminal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050509;
+      color: #f4f4f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 4px;
+    }
+
+    p.subtitle {
+      color: #a1a1aa;
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #18181b;
+      border-radius: 16px;
+      padding: 16px 20px;
+      max-width: 900px;
+      width: 100%;
+      box-shadow: 0 18px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .card + .card {
+      margin-top: 16px;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 8px 6px;
+      text-align: left;
+    }
+
+    thead {
+      border-bottom: 1px solid #27272a;
+      color: #e4e4e7;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #18181b;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #111827;
+    }
+
+    .ticker {
+      font-family: "SF Mono", Menlo, monospace;
+      font-weight: 600;
+    }
+
+    .bias-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .bias-bullish {
+      background: rgba(34, 197, 94, 0.16);
+      color: #4ade80;
+    }
+
+    .bias-neutral {
+      background: rgba(148, 163, 184, 0.16);
+      color: #e5e7eb;
+    }
+
+    .bias-bearish {
+      background: rgba(248, 113, 113, 0.16);
+      color: #fca5a5;
+    }
+
+    .watchlist-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .watchlist-form input {
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #27272a;
+      background: #09090b;
+      color: #e4e4e7;
+      outline: none;
+      min-width: 120px;
+    }
+
+    .watchlist-form input::placeholder {
+      color: #6b7280;
+    }
+
+    .watchlist-form button {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #22c55e;
+      color: #022c22;
+      font-weight: 600;
+    }
+
+    .watchlist-form button:hover {
+      opacity: 0.9;
+    }
+
+    .icon-button {
+      border: none;
+      background: transparent;
+      color: #f97373;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 8px;
+    }
+
+    .empty-state {
+      font-size: 14px;
+      color: #9ca3af;
+      padding: 8px 0;
+    }
+
+    .top10-note {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .idea-pill {
+      display: inline-flex;
+      flex-direction: column;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid #27272a;
+      background: #020617;
+      min-width: 120px;
+    }
+
+    .idea-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .idea-ticker {
+      font-family: "SF Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+
+    .idea-meta {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ayaan Terminal</h1>
+  <p class="subtitle">
+    AI-powered daily watchlist & short-term trade ideas (prototype UI).
+  </p>
+
+  <!-- WATCHLIST CARD -->
+  <div class="card">
+    <h2>Watchlist</h2>
+    <form class="watchlist-form" id="watchlist-form">
+      <input id="ticker-input" type="text" placeholder="Ticker (e.g. NVDA)" />
+      <input id="name-input" type="text" placeholder="Company name (optional)" />
+      <button type="submit">Add to watchlist</button>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th>Name</th>
+          <th>Bias</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="watchlist-body">
+        <!-- rows injected by JS -->
+      </tbody>
+    </table>
+    <div id="watchlist-empty" class="empty-state" style="display:none;">
+      No stocks yet. Add a ticker above to start your watchlist.
+    </div>
+  </div>
+
+  <!-- TOP 10 IDEAS CARD (STATIC FOR NOW) -->
+  <div class="card">
+    <h2>Top 10 Short-Term Trade Ideas</h2>
+    <p class="top10-note">
+      These are placeholder ideas for the UI only. Later this will be filled by your AI + data pipeline.
+    </p>
+    <div class="idea-row">
+      <div class="idea-pill">
+        <span class="idea-ticker">MU</span>
+        <span class="idea-meta">Bullish · Semi</span>
+      </div>
+      <div class="idea-pill">
+        <span class="idea-ticker">LRCX</span>
+        <span class="idea-meta">Bullish · Semi Equip</span>
+      </div>
+      <div class="idea-pill">
+        <span class="idea-ticker">AMD</span>
+        <span class="idea-meta">Bullish · AI Chips</span>
+      </div>
+      <div class="idea-pill">
+        <span class="idea-ticker">MRVL</span>
+        <span class="idea-meta">Bullish · Data Center</span>
+      </div>
+      <div class="idea-pill">
+        <span class="idea-ticker">OXY</span>
+        <span class="idea-meta">Bullish · Energy</span>
+      </div>
+    </div>
+    <div class="idea-row">
+      <div class="idea-pill">
+        <span class="idea-ticker">EQT</span>
+        <span class="idea-meta">Bullish · Nat Gas</span>
+      </div>
+      <div class="idea-pill">
+        <span class="idea-ticker">HOOD</span>
+        <span class="idea-meta">Spec · Fintech</span>
+      </div>
+      <div class="idea-pill">
+        <span class="idea-ticker">WDC</span>
+        <span class="idea-meta">Bullish · Storage</span>
+      </div>
+      <div class="idea-pill">
+        <span class="idea-ticker">STX</span>
+        <span class="idea-meta">Bullish · Storage</span>
+      </div>
+      <div class="idea-pill">
+        <span class="idea-ticker">CDZ</span>
+        <span class="idea-meta">Spec · Bounce</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- SIMPLE WATCHLIST STORAGE USING LOCALSTORAGE ---
+
+    const STORAGE_KEY = "ayaan_terminal_watchlist";
+
+    function loadWatchlist() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return [];
+      }
+    }
+
+    function saveWatchlist(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+
+    function biasClass(bias) {
+      if (bias === "Bullish") return "bias-pill bias-bullish";
+      if (bias === "Bearish") return "bias-pill bias-bearish";
+      return "bias-pill bias-neutral";
+    }
+
+    function renderWatchlist() {
+      const tbody = document.getElementById("watchlist-body");
+      const empty = document.getElementById("watchlist-empty");
+      const watchlist = loadWatchlist();
+
+      tbody.innerHTML = "";
+
+      if (watchlist.length === 0) {
+        empty.style.display = "block";
+        return;
+      } else {
+        empty.style.display = "none";
+      }
+
+      watchlist.forEach((item, index) => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td class="ticker">${item.ticker}</td>
+          <td>${item.name || ""}</td>
+          <td>
+            <span class="${biasClass(item.bias || "Neutral")}">
+              ${item.bias || "Neutral"}
+            </span>
+          </td>
+          <td class="notes">${item.notes || ""}</td>
+          <td>
+            <button class="icon-button" data-index="${index}" title="Remove">
+              ✕
+            </button>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      // Attach click handlers for delete buttons
+      tbody.querySelectorAll(".icon-button").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const idx = parseInt(e.currentTarget.getAttribute("data-index"), 10);
+          const list = loadWatchlist();
+          list.splice(idx, 1);
+          saveWatchlist(list);
+          renderWatchlist();
+        });
+      });
+    }
+
+    function setupForm() {
+      const form = document.getElementById("watchlist-form");
+      const tickerInput = document.getElementById("ticker-input");
+      const nameInput = document.getElementById("name-input");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const ticker = tickerInput.value.trim().toUpperCase();
+        const name = nameInput.value.trim();
+
+        if (!ticker) return;
+
+        const list = loadWatchlist();
+
+        // Avoid duplicates
+        if (list.some((item) => item.ticker === ticker)) {
+          alert("Ticker already in watchlist.");
+          return;
+        }
+
+        list.push({
+          ticker,
+          name,
+          bias: "Neutral",
+          notes: "Newly added to watchlist"
+        });
+
+        saveWatchlist(list);
+        renderWatchlist();
+
+        tickerInput.value = "";
+        nameInput.value = "";
+      });
+    }
+
+    // Initialize on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      setupForm();
+      renderWatchlist();
+    });
+  </script>
+</body>
+</html>
