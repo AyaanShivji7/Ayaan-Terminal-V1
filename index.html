@@ -181,6 +181,18 @@
       font-size: 11px;
       color: #9ca3af;
     }
+
+    .price-cell {
+      font-family: "SF Mono", Menlo, monospace;
+    }
+
+    .pos-change {
+      color: #4ade80;
+    }
+
+    .neg-change {
+      color: #fca5a5;
+    }
   </style>
 </head>
 <body>
@@ -203,6 +215,8 @@
         <tr>
           <th>Ticker</th>
           <th>Name</th>
+          <th>Price</th>
+          <th>Change %</th>
           <th>Bias</th>
           <th>Notes</th>
           <th></th>
@@ -270,8 +284,12 @@
   </div>
 
   <script>
-    // --- SIMPLE WATCHLIST STORAGE USING LOCALSTORAGE ---
+    // ===== API CONFIG (Alpha Vantage) =====
+    const API_KEY = "WSH5L9LN31IEOMNK";
+    const API_BASE =
+      "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=";
 
+    // ===== WATCHLIST STORAGE =====
     const STORAGE_KEY = "ayaan_terminal_watchlist";
 
     function loadWatchlist() {
@@ -294,6 +312,7 @@
       return "bias-pill bias-neutral";
     }
 
+    // ===== RENDER WATCHLIST TABLE =====
     function renderWatchlist() {
       const tbody = document.getElementById("watchlist-body");
       const empty = document.getElementById("watchlist-empty");
@@ -311,9 +330,23 @@
       watchlist.forEach((item, index) => {
         const tr = document.createElement("tr");
 
+        const price =
+          item.price != null ? item.price.toFixed(2) : "…";
+
+        let changeText = "…";
+        let changeClass = "";
+        if (item.changePercent != null) {
+          const pct = item.changePercent;
+          const sign = pct > 0 ? "+" : "";
+          changeText = sign + pct.toFixed(2) + "%";
+          changeClass = pct > 0 ? "pos-change" : pct < 0 ? "neg-change" : "";
+        }
+
         tr.innerHTML = `
           <td class="ticker">${item.ticker}</td>
           <td>${item.name || ""}</td>
+          <td class="price-cell">${price}</td>
+          <td class="${changeClass}">${changeText}</td>
           <td>
             <span class="${biasClass(item.bias || "Neutral")}">
               ${item.bias || "Neutral"}
@@ -330,7 +363,7 @@
         tbody.appendChild(tr);
       });
 
-      // Attach click handlers for delete buttons
+      // Attach delete handlers
       tbody.querySelectorAll(".icon-button").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           const idx = parseInt(e.currentTarget.getAttribute("data-index"), 10);
@@ -342,12 +375,68 @@
       });
     }
 
+    // ===== FETCH QUOTE FOR A SINGLE TICKER =====
+    async function fetchQuote(ticker) {
+      if (!API_KEY) return null;
+
+      const url = `${API_BASE}${encodeURIComponent(
+        ticker
+      )}&apikey=${API_KEY}`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error("HTTP error for", ticker, res.status);
+          return null;
+        }
+        const data = await res.json();
+        const q = data["Global Quote"];
+        if (!q) {
+          console.error("No Global Quote for", ticker, data);
+          return null;
+        }
+
+        const price = parseFloat(q["05. price"]);
+        let pctStr = q["10. change percent"] || "0";
+        pctStr = pctStr.replace("%", "");
+        const changePercent = parseFloat(pctStr);
+
+        if (Number.isNaN(price) || Number.isNaN(changePercent)) {
+          return null;
+        }
+
+        return { price, changePercent };
+      } catch (err) {
+        console.error("Error fetching quote for", ticker, err);
+        return null;
+      }
+    }
+
+    // ===== REFRESH PRICES FOR ENTIRE WATCHLIST =====
+    async function refreshAllPrices() {
+      const list = loadWatchlist();
+      if (!list.length) return;
+
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i];
+        const quote = await fetchQuote(item.ticker);
+        if (quote) {
+          item.price = quote.price;
+          item.changePercent = quote.changePercent;
+          saveWatchlist(list);
+          renderWatchlist();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 15000));
+      }
+    }
+
+    // ===== FORM HANDLING =====
     function setupForm() {
       const form = document.getElementById("watchlist-form");
       const tickerInput = document.getElementById("ticker-input");
       const nameInput = document.getElementById("name-input");
 
-      form.addEventListener("submit", (e) => {
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const ticker = tickerInput.value.trim().toUpperCase();
         const name = nameInput.value.trim();
@@ -356,33 +445,43 @@
 
         const list = loadWatchlist();
 
-        // Avoid duplicates
         if (list.some((item) => item.ticker === ticker)) {
           alert("Ticker already in watchlist.");
           return;
         }
 
-        list.push({
+        const newItem = {
           ticker,
           name,
           bias: "Neutral",
-          notes: "Newly added to watchlist"
-        });
+          notes: "Newly added to watchlist",
+          price: null,
+          changePercent: null,
+        };
 
+        list.push(newItem);
         saveWatchlist(list);
         renderWatchlist();
+
+        const quote = await fetchQuote(ticker);
+        if (quote) {
+          newItem.price = quote.price;
+          newItem.changePercent = quote.changePercent;
+          saveWatchlist(list);
+          renderWatchlist();
+        }
 
         tickerInput.value = "";
         nameInput.value = "";
       });
     }
 
-    // Initialize on page load
+    // ===== INIT =====
     document.addEventListener("DOMContentLoaded", () => {
       setupForm();
       renderWatchlist();
+      refreshAllPrices();
     });
   </script>
 </body>
 </html>
-
